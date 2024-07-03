@@ -15,6 +15,7 @@ name = "pypi"
 "bencode.py" = "4.0.0"
 requests = "2.31.0"
 bencodepy = "*"
+uvloop = "*"
 
 [dev-packages]
 
