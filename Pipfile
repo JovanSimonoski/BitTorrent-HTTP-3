@@ -16,6 +16,7 @@ name = "pypi"
 requests = "2.31.0"
 bencodepy = "*"
 uvloop = "*"
+flask = "*"
 
 [dev-packages]
 

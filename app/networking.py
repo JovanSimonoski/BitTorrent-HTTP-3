@@ -75,7 +75,8 @@ def get_list_of_peers(torrentfile_data):
         "left": left,
         "compact": compact
     }
-    response = requests.get("127.0.0.1:8080/announce", params=data)
+    # response = requests.get("127.0.0.1:8080/announce", params=data)
+    response = requests.get(tracker_url, params=data)
     response_data = bencode_utils.decode_bencode_torrent(response.content)
     peers = response_data[b"peers"]
     peers_list = []
