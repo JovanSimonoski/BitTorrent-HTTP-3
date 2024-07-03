@@ -44,6 +44,16 @@ class BTClientProtocol(QuicConnectionProtocol):
                 self._ack_waiter = None
                 waiter.set_result(answer)
 
+response = requests.get("http://127.0.0.1:8080/announce")
+response_data = bencode_utils.decode_bencode_torrent(response.content)
+decoded = bencode_utils.decode_bencode(response_data)
+peers = decoded["peers"]
+peers = bencode_utils.decode_bencode(peers)
+peers_received = []
+for peer in peers:
+    peers_received.append(bencode_utils.decode_bencode(peer))
+print(peers_received)
+
 
 def get_list_of_peers(torrentfile_data):
     tracker_url = torrentfile_data[b"announce"].decode()
@@ -65,7 +75,7 @@ def get_list_of_peers(torrentfile_data):
         "left": left,
         "compact": compact
     }
-    response = requests.get(tracker_url, params=data)
+    response = requests.get("127.0.0.1:8080/announce", params=data)
     response_data = bencode_utils.decode_bencode_torrent(response.content)
     peers = response_data[b"peers"]
     peers_list = []
