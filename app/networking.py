@@ -16,6 +16,7 @@ from aioquic.quic.events import QuicEvent, StreamDataReceived
 configuration = QuicConfiguration(is_client=True, )
 configuration.load_verify_locations("pycacert.pem")
 configuration.secrets_log_file = open('secrets', 'w')
+downloaded_file = open('file', 'rb').read()
 
 class BTClientProtocol(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
@@ -26,6 +27,16 @@ class BTClientProtocol(QuicConnectionProtocol):
         # send query and wait for answer
         stream_id = self._quic.get_next_available_stream_id()
         self._quic.send_stream_data(stream_id, handshake_msg, end_stream=True)
+        waiter = self._loop.create_future()
+        self._ack_waiter = waiter
+        self.transmit()
+
+        return await asyncio.shield(waiter)
+    
+    async def send_file(self):
+        stream_id = self._quic.get_next_available_stream_id()
+        data = b'file' + downloaded_file
+        self._quic.send_stream_data(stream_id, data, end_stream=True)
         waiter = self._loop.create_future()
         self._ack_waiter = waiter
         self.transmit()
@@ -44,15 +55,15 @@ class BTClientProtocol(QuicConnectionProtocol):
                 self._ack_waiter = None
                 waiter.set_result(answer)
 
-response = requests.get("http://127.0.0.1:8080/announce")
-response_data = bencode_utils.decode_bencode_torrent(response.content)
-decoded = bencode_utils.decode_bencode(response_data)
-peers = decoded["peers"]
-peers = bencode_utils.decode_bencode(peers)
-peers_received = []
-for peer in peers:
-    peers_received.append(bencode_utils.decode_bencode(peer))
-print(peers_received)
+# response = requests.get("http://127.0.0.1:8080/announce")
+# response_data = bencode_utils.decode_bencode_torrent(response.content)
+# decoded = bencode_utils.decode_bencode(response_data)
+# peers = decoded["peers"]
+# peers = bencode_utils.decode_bencode(peers)
+# peers_received = []
+# for peer in peers:
+#     peers_received.append(bencode_utils.decode_bencode(peer))
+# print(peers_received)
 
 
 def get_list_of_peers(torrentfile_data):
@@ -113,10 +124,11 @@ def perform_handshake(torrentfile_data, peer):
         print(f'initiating handshake with {host}:{port}')
         async with connect(host, port, configuration=conf, create_protocol=BTClientProtocol) as client:
             client = cast(BTClientProtocol, client)
-            return await client.do_handshake(handshake_msg), client
+            print(await client.send_file())
+            return await client.do_handshake(handshake_msg)
 
 
-    rcvd_msg, client = asyncio.run(handshake(
+    rcvd_msg = asyncio.run(handshake(
         configuration,
         'localhost', 9999))
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
